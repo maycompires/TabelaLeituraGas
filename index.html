@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasTracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="login-screen" class="screen auth-screen">
+        <h1>GasTracker</h1>
+        <form id="login-form">
+            <input type="text" id="login-credential" placeholder="Usuário ou E-mail" required>
+            <input type="password" id="login-password" placeholder="Senha" required>
+            <div class="button-group">
+                <button type="submit">Entrar</button>
+            </div>
+            <p>Não tem conta? <a href="#" id="show-register">Registre-se</a></p>
+            <p><a href="#" id="forgot-password">Esqueceu a senha?</a></p>
+        </form>
+    </div>
+
+    <!-- Tela de Registro -->
+    <div id="register-screen" class="screen auth-screen hidden">
+        <h1>Registrar</h1>
+        <form id="register-form">
+            <input type="email" id="register-email" placeholder="E-mail" required>
+            <input type="text" id="register-username" placeholder="Usuário" required>
+            <input type="password" id="register-password" placeholder="Senha" required>
+            <div class="button-group">
+                <button type="submit">Registrar</button>
+            </div>
+            <p>Já tem conta? <a href="#" id="show-login">Entrar</a></p>
+        </form>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-screen" class="screen hidden">
+        <header>
+            <h1>Dashboard</h1>
+            <button id="logout">Sair</button>
+        </header>
+        <div id="progress">0/116 concluídos</div>
+        <div id="blocks" class="grid">
+            <div class="card" data-block="A">Bloco A</div>
+            <div class="card" data-block="B">Bloco B</div>
+            <div class="card" data-block="C">Bloco C</div>
+            <div class="card" data-block="D">Bloco D</div>
+        </div>
+        <div class="button-group">
+            <button id="report-btn" disabled>Enviar Relatório</button>
+            <button id="new-reading-btn">Criar Nova Leitura</button>
+        </div>
+    </div>
+
+    <!-- Tela de Registro de Leituras -->
+    <div id="reading-screen" class="screen hidden">
+        <header>
+            <h1 id="block-title">Bloco</h1>
+            <button id="back-to-dashboard">Voltar</button>
+        </header>
+        <div class="datetime">
+            <input type="date" id="reading-date">
+            <input type="time" id="reading-time">
+        </div>
+        <div id="apartments" class="grid"></div>
+    </div>
+
+    <!-- Tela de Relatório -->
+    <div id="report-screen" class="screen hidden">
+        <header>
+            <h1>Relatório</h1>
+            <button id="back-from-report">Voltar</button>
+            <button id="export-excel">Exportar para Excel</button>
+        </header>
+        <table>
+            <thead>
+                <tr>
+                    <th>Bloco</th>
+                    <th>Apartamento</th>
+                    <th>Leitura (m³)</th>
+                    <th>Usuário</th>
+                    <th>Data/Hora</th>
+                </tr>
+            </thead>
+            <tbody id="report-table"></tbody>
+        </table>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
