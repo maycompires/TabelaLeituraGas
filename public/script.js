@@ -199,66 +199,40 @@ function validateDate() {
 }
 
 async function saveReading(block, apt, input) {
-    const value = input.value.trim();
-    
-    // Validação básica
-    if (!value) {
-        input.classList.add('invalid');
-        showFeedback(`Por favor, insira um valor para o apartamento ${apt}`, 'error');
-        return;
-    }
-
-    const numericValue = parseFloat(value);
-    if (isNaN(numericValue) || numericValue < 0) {
+    const value = input.value;
+    if (value < 0) {
         input.classList.add('invalid');
         showFeedback(`Valor inválido para o apartamento ${apt}`, 'error');
         return;
     }
-
     input.classList.remove('invalid');
     input.classList.add('valid');
 
     const date = document.getElementById('reading-date').value;
     const time = document.getElementById('reading-time').value;
-    
-    if (!date || !time) {
-        showFeedback('Por favor, selecione data e hora da leitura', 'error');
-        return;
-    }
-
     const timestamp = `${date} ${time}:00`;
 
     try {
         const response = await fetch(`${API_URL}/readings`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 block,
                 apt,
-                value: numericValue,
+                value,
                 user_id: currentUser.id,
                 timestamp
             })
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(data.error || 'Erro ao salvar leitura');
+            throw new Error('Erro ao salvar leitura');
         }
 
-        input.classList.add('valid');
-        showFeedback(`Leitura do apartamento ${apt} salva com sucesso!`, 'success');
-        
-        await updateProgress();
-        await updateBlockCompletion();
+        updateProgress();
+        updateBlockCompletion();
     } catch (error) {
-        input.classList.add('invalid');
         showFeedback(error.message, 'error');
-        console.error('Erro ao salvar leitura:', error);
     }
 }
 
