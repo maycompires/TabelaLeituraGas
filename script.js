@@ -18,6 +18,28 @@ function showScreen(screen) {
     screens[screen].classList.remove('hidden');
 }
 
+// Função para mostrar mensagem de feedback
+function showFeedback(message, type = 'success') {
+    const existingFeedback = document.querySelector('.feedback-message');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+
+    const feedback = document.createElement('div');
+    feedback.className = `feedback-message ${type}`;
+    feedback.textContent = message;
+
+    const currentScreen = document.querySelector('.screen:not(.hidden)');
+    const form = currentScreen.querySelector('form');
+    if (form) {
+        form.insertAdjacentElement('beforebegin', feedback);
+    } else {
+        currentScreen.insertAdjacentElement('afterbegin', feedback);
+    }
+
+    setTimeout(() => feedback.remove(), 5000);
+}
+
 // Autenticação
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -25,12 +47,14 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     const password = document.getElementById('login-password').value;
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find(u => (u.username === credential || u.email === credential) && u.password === password);
+    
     if (user) {
         currentUser = user.username;
         showScreen('dashboard');
         updateProgress();
+        showFeedback(`Bem-vindo(a), ${user.username}!`);
     } else {
-        alert('Usuário/E-mail ou senha inválidos');
+        showFeedback('Usuário/E-mail ou senha inválidos', 'error');
     }
 });
 
@@ -39,14 +63,21 @@ document.getElementById('register-form').addEventListener('submit', (e) => {
     const email = document.getElementById('register-email').value;
     const username = document.getElementById('register-username').value;
     const password = document.getElementById('register-password').value;
-    let users = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.some(u => u.email === email || u.username === username)) {
-        alert('E-mail ou usuário já registrado');
+    
+    if (password.length < 6) {
+        showFeedback('A senha deve ter pelo menos 6 caracteres', 'error');
         return;
     }
+
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.some(u => u.email === email || u.username === username)) {
+        showFeedback('E-mail ou usuário já registrado', 'error');
+        return;
+    }
+
     users.push({ email, username, password });
     localStorage.setItem('users', JSON.stringify(users));
-    alert('Registrado com sucesso! Faça login.');
+    showFeedback('Registrado com sucesso! Faça login.', 'success');
     showScreen('login');
 });
 
@@ -92,7 +123,8 @@ document.getElementById('new-reading-btn').addEventListener('click', () => {
     if (confirm('Deseja criar uma nova leitura? Isso apagará todas as leituras existentes.')) {
         localStorage.removeItem('readings');
         updateProgress();
-        alert('Nova leitura criada. Registre os novos valores.');
+        updateBlockCompletion();
+        showFeedback('Nova leitura criada. Registre os novos valores.', 'warning');
     }
 });
 
@@ -142,6 +174,7 @@ function saveReading(block, apt, input) {
     const value = input.value;
     if (value < 0) {
         input.classList.add('invalid');
+        showFeedback(`Valor inválido para o apartamento ${apt}`, 'error');
         return;
     }
     input.classList.remove('invalid');
@@ -167,6 +200,7 @@ function saveReading(block, apt, input) {
 
     localStorage.setItem('readings', JSON.stringify(readings));
     updateProgress();
+    updateBlockCompletion();
 }
 
 // Progresso
@@ -292,73 +326,102 @@ function getAverageConsumption(readings) {
 
 // Exportar para Excel
 document.getElementById('export-excel').addEventListener('click', () => {
-    const readings = JSON.parse(localStorage.getItem('readings') || '[]');
-    if (!readings.length) {
-        alert('Nenhuma leitura para exportar.');
-        return;
-    }
+    const exportBtn = document.getElementById('export-excel');
+    exportBtn.classList.add('loading');
+    
+    setTimeout(() => {
+        try {
+            const readings = JSON.parse(localStorage.getItem('readings') || '[]');
+            if (!readings.length) {
+                showFeedback('Nenhuma leitura para exportar.', 'warning');
+                return;
+            }
 
-    readings.sort((a, b) => {
-        if (a.block === b.block) {
-            return parseInt(a.apt) - parseInt(b.apt);
+            readings.sort((a, b) => {
+                if (a.block === b.block) {
+                    return parseInt(a.apt) - parseInt(b.apt);
+                }
+                return a.block.localeCompare(b.block);
+            });
+
+            const anomalies = detectAnomalies(readings);
+            const top10Highest = getTop10Highest(readings);
+            const top10Lowest = getTop10Lowest(readings);
+            const { blockAvg, aptAvg } = getAverageConsumption(readings);
+
+            const wb = XLSX.utils.book_new();
+
+            const wsLeituras = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
+                ...readings.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsLeituras, 'Leituras');
+
+            const wsAnomalias = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora', 'Motivo'],
+                ...anomalies.map(r => [r.block, r.apt, r.value, r.user, r.timestamp, r.reason])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsAnomalias, 'Anomalias');
+
+            const wsTop10High = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
+                ...top10Highest.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsTop10High, 'Top 10 Maior');
+
+            const wsTop10Low = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
+                ...top10Lowest.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsTop10Low, 'Top 10 Menor');
+
+            const wsBlockAvg = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Média (m³)', 'Desvio Padrão'],
+                ...blockAvg.map(b => [b.block, b.average.toFixed(2), b.stdDev.toFixed(2)])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsBlockAvg, 'Média por Bloco');
+
+            const wsAptAvg = XLSX.utils.aoa_to_sheet([
+                ['Bloco', 'Apartamento', 'Média (m³)', 'Desvio Padrão'],
+                ...aptAvg.map(a => [a.block, a.apt, a.average.toFixed(2), a.stdDev.toFixed(2)])
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsAptAvg, 'Média por Apto');
+
+            XLSX.writeFile(wb, 'GasTracker_Relatorio.xlsx');
+            showFeedback('Relatório exportado com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro ao exportar para Excel:', error);
+            showFeedback('Erro ao gerar o arquivo Excel.', 'error');
+        } finally {
+            exportBtn.classList.remove('loading');
         }
-        return a.block.localeCompare(b.block);
-    });
-
-    const anomalies = detectAnomalies(readings);
-    const top10Highest = getTop10Highest(readings);
-    const top10Lowest = getTop10Lowest(readings);
-    const { blockAvg, aptAvg } = getAverageConsumption(readings);
-
-    const wb = XLSX.utils.book_new();
-
-    const wsLeituras = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
-        ...readings.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsLeituras, 'Leituras');
-
-    const wsAnomalias = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora', 'Motivo'],
-        ...anomalies.map(r => [r.block, r.apt, r.value, r.user, r.timestamp, r.reason])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsAnomalias, 'Anomalias');
-
-    const wsTop10High = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
-        ...top10Highest.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsTop10High, 'Top 10 Maior');
-
-    const wsTop10Low = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Apartamento', 'Leitura (m³)', 'Usuário', 'Data/Hora'],
-        ...top10Lowest.map(r => [r.block, r.apt, r.value, r.user, r.timestamp])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsTop10Low, 'Top 10 Menor');
-
-    const wsBlockAvg = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Média (m³)', 'Desvio Padrão'],
-        ...blockAvg.map(b => [b.block, b.average.toFixed(2), b.stdDev.toFixed(2)])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsBlockAvg, 'Média por Bloco');
-
-    const wsAptAvg = XLSX.utils.aoa_to_sheet([
-        ['Bloco', 'Apartamento', 'Média (m³)', 'Desvio Padrão'],
-        ...aptAvg.map(a => [a.block, a.apt, a.average.toFixed(2), a.stdDev.toFixed(2)])
-    ]);
-    XLSX.utils.book_append_sheet(wb, wsAptAvg, 'Média por Apto');
-
-    try {
-        XLSX.writeFile(wb, 'GasTracker_Relatorio.xlsx');
-        console.log('Arquivo Excel exportado com sucesso.');
-    } catch (error) {
-        console.error('Erro ao exportar para Excel:', error);
-        alert('Erro ao gerar o arquivo Excel. Verifique o console.');
-    }
+    }, 1000);
 });
 
 document.getElementById('back-from-report').addEventListener('click', () => showScreen('dashboard'));
 
+// Função para atualizar a porcentagem de conclusão dos blocos
+function updateBlockCompletion() {
+    const readings = JSON.parse(localStorage.getItem('readings') || '[]');
+    const blocks = ['A', 'B', 'C', 'D'];
+    
+    blocks.forEach(block => {
+        const blockReadings = readings.filter(r => r.block === block);
+        const completion = Math.round((blockReadings.length / apartmentsPerBlock.length) * 100);
+        const card = document.querySelector(`.card[data-block="${block}"] .completion`);
+        if (card) {
+            card.textContent = `${completion}% concluído`;
+        }
+    });
+}
+
 // Inicialização
-if (localStorage.getItem('users')) showScreen('login');
-else showScreen('register');
+if (localStorage.getItem('users')) {
+    showScreen('login');
+} else {
+    showScreen('register');
+}
+
+// Atualizar progresso inicial
+updateProgress();
+updateBlockCompletion();

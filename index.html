@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leitura Gás</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,8 +14,12 @@
     <div id="login-screen" class="screen auth-screen">
         <h1>Leitura Gás</h1>
         <form id="login-form">
-            <input type="text" id="login-credential" placeholder="Usuário ou E-mail" required>
-            <input type="password" id="login-password" placeholder="Senha" required>
+            <div class="input-group">
+                <input type="text" id="login-credential" placeholder="Usuário ou E-mail" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" placeholder="Senha" required>
+            </div>
             <div class="button-group">
                 <button type="submit">Entrar</button>
             </div>
@@ -25,9 +32,15 @@
     <div id="register-screen" class="screen auth-screen hidden">
         <h1>Registrar</h1>
         <form id="register-form">
-            <input type="email" id="register-email" placeholder="E-mail" required>
-            <input type="text" id="register-username" placeholder="Usuário" required>
-            <input type="password" id="register-password" placeholder="Senha" required>
+            <div class="input-group">
+                <input type="email" id="register-email" placeholder="E-mail" required>
+            </div>
+            <div class="input-group">
+                <input type="text" id="register-username" placeholder="Usuário" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="register-password" placeholder="Senha" required>
+            </div>
             <div class="button-group">
                 <button type="submit">Registrar</button>
             </div>
@@ -43,10 +56,22 @@
         </header>
         <div id="progress">0/116 concluídos</div>
         <div id="blocks" class="grid">
-            <div class="card" data-block="A">Bloco A</div>
-            <div class="card" data-block="B">Bloco B</div>
-            <div class="card" data-block="C">Bloco C</div>
-            <div class="card" data-block="D">Bloco D</div>
+            <div class="card" data-block="A">
+                <h3>Bloco A</h3>
+                <p class="completion">0%</p>
+            </div>
+            <div class="card" data-block="B">
+                <h3>Bloco B</h3>
+                <p class="completion">0%</p>
+            </div>
+            <div class="card" data-block="C">
+                <h3>Bloco C</h3>
+                <p class="completion">0%</p>
+            </div>
+            <div class="card" data-block="D">
+                <h3>Bloco D</h3>
+                <p class="completion">0%</p>
+            </div>
         </div>
         <div class="button-group">
             <button id="report-btn" disabled>Enviar Relatório</button>
@@ -61,8 +86,14 @@
             <button id="back-to-dashboard">Voltar</button>
         </header>
         <div class="datetime">
-            <input type="date" id="reading-date">
-            <input type="time" id="reading-time">
+            <div class="input-group">
+                <label for="reading-date">Data</label>
+                <input type="date" id="reading-date">
+            </div>
+            <div class="input-group">
+                <label for="reading-time">Hora</label>
+                <input type="time" id="reading-time">
+            </div>
         </div>
         <div id="apartments" class="grid"></div>
     </div>
@@ -71,21 +102,25 @@
     <div id="report-screen" class="screen hidden">
         <header>
             <h1>Relatório</h1>
-            <button id="back-from-report">Voltar</button>
-            <button id="export-excel">Exportar para Excel</button>
+            <div class="button-group">
+                <button id="back-from-report">Voltar</button>
+                <button id="export-excel">Exportar para Excel</button>
+            </div>
         </header>
-        <table>
-            <thead>
-                <tr>
-                    <th>Bloco</th>
-                    <th>Apartamento</th>
-                    <th>Leitura (m³)</th>
-                    <th>Usuário</th>
-                    <th>Data/Hora</th>
-                </tr>
-            </thead>
-            <tbody id="report-table"></tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bloco</th>
+                        <th>Apartamento</th>
+                        <th>Leitura (m³)</th>
+                        <th>Usuário</th>
+                        <th>Data/Hora</th>
+                    </tr>
+                </thead>
+                <tbody id="report-table"></tbody>
+            </table>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
