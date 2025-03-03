@@ -11,7 +11,7 @@ const screens = {
 let currentUser = null;
 const apartmentsPerBlock = ['01', '02', '03', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110', '111', '112', '201', '202', '203', '204', '205', '206', '207', '208', '209', '210', '211', '212', '301', '302'];
 const totalApartments = 116;
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.origin + '/api';
 
 // Função para alternar telas
 function showScreen(screen) {
