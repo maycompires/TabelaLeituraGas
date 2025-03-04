@@ -8,27 +8,55 @@ const path = require('path');
 const app = express();
 
 // Configuração do PostgreSQL
+console.log('Iniciando configuração do PostgreSQL...');
+console.log('DATABASE_URL presente:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1] : 'não definida'); // Mostra só a parte depois do @ por segurança
+
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-// Teste de conexão inicial
+// Teste de conexão inicial com mais logs
 pool.connect()
     .then(() => {
         console.log('Conexão com o banco de dados estabelecida com sucesso!');
+        console.log('Usando DATABASE_URL:', process.env.DATABASE_URL ? 'Sim' : 'Não');
     })
     .catch(err => {
-        console.error('Erro ao conectar ao banco de dados:', err);
+        console.error('Erro detalhado ao conectar ao banco de dados:', {
+            message: err.message,
+            code: err.code,
+            stack: err.stack
+        });
+        process.exit(1); // Encerra o aplicativo se não conseguir conectar ao banco
     });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Rota de teste
+app.get('/api/test', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.json({
+            status: 'success',
+            message: 'Conexão com banco de dados OK',
+            timestamp: result.rows[0].now
+        });
+    } catch (error) {
+        console.error('Erro no teste:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Erro na conexão com banco de dados',
+            error: error.message
+        });
+    }
+});
 
 // Rotas da API
 
