@@ -19,11 +19,29 @@ const pool = new Pool({
     }
 });
 
+// Função para inicializar o banco de dados
+async function initializeDatabase() {
+    try {
+        console.log('Inicializando banco de dados...');
+        const fs = require('fs');
+        const path = require('path');
+        const sqlFile = path.join(__dirname, 'db', 'init.sql');
+        const sql = fs.readFileSync(sqlFile, 'utf8');
+        
+        await pool.query(sql);
+        console.log('Banco de dados inicializado com sucesso!');
+    } catch (error) {
+        console.error('Erro ao inicializar banco de dados:', error);
+        throw error;
+    }
+}
+
 // Teste de conexão inicial com mais logs
 pool.connect()
-    .then(() => {
+    .then(async () => {
         console.log('Conexão com o banco de dados estabelecida com sucesso!');
         console.log('Usando DATABASE_URL:', process.env.DATABASE_URL ? 'Sim' : 'Não');
+        await initializeDatabase();
     })
     .catch(err => {
         console.error('Erro detalhado ao conectar ao banco de dados:', {
